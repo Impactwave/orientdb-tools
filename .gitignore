@@ -1,0 +1,7 @@
+/.*
+!.gitignore
+!.gitattributes
+vendor
+composer.lock
+/.idea
+/env-config.json

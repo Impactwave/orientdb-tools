@@ -1,0 +1,14 @@
+{
+  "local":      {
+    "host": "localhost", "port": 2424, "user": "root", "pass": "root"
+  },
+  "intranet":   {
+    "host": "remote-server.com", "port": 2222, "user": "root", "pass": "root"
+  },
+  "staging":    {
+    "host": "localhost", "port": 2222, "user": "root", "pass": "root"
+  },
+  "production": {
+    "host": "localhost", "port": 2424, "user": "root", "pass": "root"
+  }
+}

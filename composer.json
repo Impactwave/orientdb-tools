@@ -1,0 +1,14 @@
+{
+  "name": "impactwave/orientdb-tools",
+  "description": "Tools for working with OrientDB databases",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Claudio Silva",
+      "email": "claudio.silva@impactwave.com"
+    }
+  ],
+  "require": {
+    "ostico/phporient": "dev-master"
+  }
+}
