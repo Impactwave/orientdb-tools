@@ -1,6 +1,6 @@
 {
   "name": "impactwave/orientdb-tools",
-  "description": "Tools for working with OrientDB databases",
+  "description": "Tools for working with OrientDB databases.",
   "license": "MIT",
   "authors": [
     {

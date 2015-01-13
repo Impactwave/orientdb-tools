@@ -125,6 +125,12 @@ while (($data = fgetcsv ($handle, 0, ",")) !== FALSE) {
     $tx = $tx->begin ();
   }
 
+  foreach ($data as &$v) {
+    if ($v == '') $v = null;
+    else if ($v[0] == '"') $v = substr ($v, 1, -1);
+    else if (is_numeric ($v)) $v = floatval ($v);
+  }
+
   $content = array_combine ($header, $data);
   if (isset($set))
     $content = array_merge ($content, $set);
