@@ -3,6 +3,7 @@
 use PhpOrient\PhpOrient;
 use PhpOrient\Protocols\Binary\Data\Record;
 use PhpOrient\Protocols\Binary\Data\ID;
+use PhpOrient\Exceptions\PhpOrientException;
 
 require 'vendor/autoload.php';
 
@@ -108,7 +109,11 @@ if (!$client->dbExists ($database, PhpOrient::DATABASE_TYPE_DOCUMENT)) {
 $client->dbOpen ($database);
 
 if ($clear) {
-  $client->command ("TRUNCATE CLASS $className");
+  try {
+    $client->command ("TRUNCATE CLASS $className");
+  } catch (PhpOrientException $e) {
+    fatal ($e->getMessage ());
+  }
   echo "Cleared all records of $className.\n\n";
 }
 
@@ -118,46 +123,52 @@ $startTime = time ();
 $row = 0;
 $handle = fopen ($file, "r");
 $header = fgetcsv ($handle, 0, ",");
-while (($data = fgetcsv ($handle, 0, ",")) !== FALSE) {
-  ++$row;
-  if (!isset($tx)) {
-    $tx = $client->getTransactionStatement ();
-    $tx = $tx->begin ();
+
+try {
+  while (($data = fgetcsv ($handle, 0, ",")) !== FALSE) {
+    ++$row;
+    if (!isset($tx)) {
+      $tx = $client->getTransactionStatement ();
+      $tx = $tx->begin ();
+    }
+
+    foreach ($data as &$v) {
+      if (is_numeric ($v)) $v = floatval ($v);
+      else if ($v == 'true') $v = true;
+      else if ($v == 'false') $v = false;
+    }
+
+    $content = array_combine ($header, $data);
+    if (isset($set))
+      $content = array_merge ($content, $set);
+
+    $rec = new Record();
+    $rec->setOClass ($className)
+      ->setOData ($content)
+      ->setRid (new ID());
+    // setRid( new ID(12)); //9 /* set only the cluster ID */ ) );
+    $recordCommand = $client->recordCreate ($rec);
+    $tx->attach ($recordCommand);
+
+    if (($row % BATCH_SIZE) == 0) {
+      echo ($row / BATCH_SIZE);
+      $result = $tx->commit ();
+      echo " ";
+      $tx = null;
+    }
+    if ($limit && $row == $limit) break;
   }
-
-  foreach ($data as &$v) {
-    if ($v == '') $v = null;
-    else if ($v[0] == '"') $v = substr ($v, 1, -1);
-    else if (is_numeric ($v)) $v = floatval ($v);
-  }
-
-  $content = array_combine ($header, $data);
-  if (isset($set))
-    $content = array_merge ($content, $set);
-
-  $rec = new Record();
-  $rec->setOClass ($className)
-    ->setOData ($content)
-    ->setRid (new ID());
-  // setRid( new ID(12)); //9 /* set only the cluster ID */ ) );
-  $recordCommand = $client->recordCreate ($rec);
-  $tx->attach ($recordCommand);
-
-  if (($row % BATCH_SIZE) == 0) {
-    echo ($row / BATCH_SIZE);
-    $result = $tx->commit ();
-    echo " ";
-    $tx = null;
-  }
-  if ($limit && $row == $limit) break;
+  if ($tx) $tx->commit ();
+  fclose ($handle);
+} catch (PhpOrientException $e) {
+  fclose ($handle);
+  fatal ($e->getMessage ());
 }
-fclose ($handle);
 
-if ($tx) $tx->commit ();
 $client->dbClose ();
 
 $delta = time () - $startTime;
-$x = floor ($row / $delta);
+$x = floor ($row / ($delta ?: 1));
 
 $time = gmdate ("H:i:s", $delta);
 echo "| $row records.
@@ -175,6 +186,10 @@ exit;
 function fatal ($msg)
 {
   global $client;
+  if (substr ($msg, 0, 4) == 'com.')
+    $msg = explode (' ', $msg, 2)[1];
+  if (substr ($msg, 0, 16) == 'Error on parsing')
+    $msg = explode (': ', $msg, 2)[1];
   try {
     if (isset($client)) $client->dbClose ();
   } catch (Exception $e) {
