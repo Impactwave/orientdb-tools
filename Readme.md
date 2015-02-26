@@ -1,6 +1,6 @@
 # OrientDB Tools
 
-Tools for working with OrientDB databases.
+##### Command-line shell scripts for working with OrientDB databases.
 
 ## Installation
 
@@ -34,7 +34,7 @@ Allows importing data in CSV format into an OrientDB database.
   - If a field's value seems to be a valid number, it will be typecasted to a float.
   - If a field's value is "true" or "false", it will be typecasted to a boolean.
   - If you need to import numbers or booleans as strings, enclose them in double qoutes.
-  
+
 ##### Command-line options
 
 ###### --env
